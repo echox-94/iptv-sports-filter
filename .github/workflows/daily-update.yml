@@ -1,0 +1,37 @@
+name: Daily Playlist Update
+
+on:
+  schedule:
+    # Runs daily at 00:00 UTC
+    - cron: '0 0 * * *'
+  # Allows manual triggering for testing
+  workflow_dispatch:
+
+jobs:
+  update-playlist:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          pip install requests
+          
+      - name: Generate filtered playlist
+        run: |
+          python generate_channels_m3u.py --source https://iptv-org.github.io/iptv/index.m3u --allow allowlist.txt --out playlist.m3u
+          
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add playlist.m3u
+          git diff --staged --quiet || git commit -m "Automated playlist update [skip ci]"
+          git push
